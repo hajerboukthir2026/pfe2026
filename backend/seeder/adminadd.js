@@ -1,14 +1,14 @@
 require("dotenv").config();
 
 const bcrypt = require("bcryptjs");
-const connectDB = require("../config/db");
+const sequalize = require("../config/db");
 const User = require("../models/User");
 
 const createAdmin = async () => {
   try {
-    await connectDB(); // 🔥 مهم جدا
+    await sequalize.authenticate(); // 🔥 مهم جدا
 
-    const existAdmin = await User.findOne({ email: "admin@admin.com" });
+    const existAdmin = await User.findOne({ where: { email: "admin@admin.com" }  });
 
     if (existAdmin) {
       console.log("⚠️ Admin already exists");

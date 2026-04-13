@@ -180,6 +180,7 @@ export default function Home({ user }) {
                         localStorage.removeItem('token');
                         setMenuOpen(false);
                         navigate('/login');
+                        window.location.reload(); 
                       }}
                       style={{
                         display: 'flex', alignItems: 'center', gap: 10,

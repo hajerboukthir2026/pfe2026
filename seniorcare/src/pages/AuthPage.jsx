@@ -35,6 +35,7 @@ export default function AuthPage({ onLogin }) {
       localStorage.setItem('token', data.token);
 
       navigate('/', { replace: true });
+      window.location.reload();
     } catch (err) {
       setError(err.response?.data?.message || 'Email ou mot de passe incorrect.');
     } finally {
