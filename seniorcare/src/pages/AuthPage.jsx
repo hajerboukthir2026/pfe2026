@@ -9,17 +9,17 @@ const api = axios.create({
 });
 
 const DEFAULT_ROUTE = {
-  admin:     '/dashboard',
+  admin: '/dashboard',
   personnel: '/dossier',
-  famille:   '/demandervisite',
+  famille: '/demandervisite',
 };
 
 export default function AuthPage({ onLogin }) {
-  const [tab, setTab]         = useState('login');
-  const [form, setForm]       = useState({
+  const [tab, setTab] = useState('login');
+  const [form, setForm] = useState({
     nom: '', prenom: '', email: '', password: '', role: 'Famille', telephone: '',
   });
-  const [error, setError]     = useState('');
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -29,12 +29,12 @@ export default function AuthPage({ onLogin }) {
     setLoading(true);
     try {
       const { data } = await api.post('/login', {
-        email:      form.email,
+        email: form.email,
         motDePasse: form.password,
       });
       localStorage.setItem('token', data.token);
-     
-      navigate( '/', { replace: true });
+
+      navigate('/', { replace: true });
     } catch (err) {
       setError(err.response?.data?.message || 'Email ou mot de passe incorrect.');
     } finally {
@@ -48,12 +48,12 @@ export default function AuthPage({ onLogin }) {
     setLoading(true);
     try {
       await api.post('/register', {
-        nom:        form.nom,
-        prenom:     form.prenom,
-        email:      form.email,
+        nom: form.nom,
+        prenom: form.prenom,
+        email: form.email,
         motDePasse: form.password,
-        role:       form.role,
-        telephone:  form.telephone || undefined,
+        role: form.role,
+        telephone: form.telephone || undefined,
       });
       setTab('login');
       setForm({ nom: '', prenom: '', email: '', password: '', role: 'Famille', telephone: '' });
@@ -95,9 +95,8 @@ export default function AuthPage({ onLogin }) {
               <button
                 key={t}
                 onClick={() => { setTab(t); setError(''); }}
-                className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
-                  tab === t ? 'btn-gold' : 'text-slate-400 hover:text-white'
-                }`}
+                className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${tab === t ? 'btn-gold' : 'text-slate-400 hover:text-white'
+                  }`}
               >
                 {t === 'login' ? 'Se connecter' : "S'inscrire"}
               </button>

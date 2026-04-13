@@ -1,13 +1,11 @@
-// src/pages/admin/Dashboard.jsx
-import React from 'react';
 import { SectionHeader, Badge } from '../../components/UI';
 
 export default function Dashboard({ residents, personnel, visites, messages }) {
   const stats = [
-    { label: 'Résidents actifs',   val: residents.filter((r) => r.statut === 'actif').length },
-    { label: 'Personnel',          val: personnel.length },
+    { label: 'Résidents actifs', val: residents.filter((r) => r.statut === 'actif').length },
+    { label: 'Personnel', val: personnel.length },
     { label: 'Visites en attente', val: visites.filter((v) => v.statut === 'en attente').length },
-    { label: 'Messages non lus',   val: messages.filter((m) => !m.lu).length },
+    { label: 'Messages non lus', val: messages.filter((m) => !m.lu).length },
   ];
 
   return (

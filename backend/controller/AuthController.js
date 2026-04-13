@@ -59,8 +59,6 @@ exports.login = async (req, res) => {
 
   try {
     const { email, motDePasse } = req.body;
-    console.log(process.env.JWT_SECRET);
-
     const user = await User.findOne({ where: { email } });
     if (!user) return res.status(404).json({ message: 'Utilisateur introuvable' });
 

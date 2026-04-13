@@ -98,8 +98,9 @@ function ProtectedRoute({ user }) {
   return <Outlet />;
 }
 
-// ── Role-based Guard (optional but powerful) ─────────────
 function RoleRoute({ user, allowedRoles }) {
+  console.log("first")
+  console.log(user)
   if (!allowedRoles.includes(user?.role)) {
     return <Navigate to="/" replace />;
   }
@@ -218,8 +219,6 @@ export default function App() {
               },
             }
           );
-
-          console.log("PROFILE:", res.data);
           setUser(res.data);
 
         } catch (error) {

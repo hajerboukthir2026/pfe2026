@@ -7,7 +7,6 @@ export default function Layout({ user, onLogout, menuItems, activeSection, setAc
 
   return (
     <div className="flex min-h-screen text-slate-200">
-      {/* ── Sidebar ── */}
       <aside
         className={`${sidebarOpen ? 'w-64' : 'w-16'} transition-all duration-300 flex flex-col shrink-0`}
         style={{ background: '#0a1528', borderRight: '1px solid rgba(201,168,76,0.12)' }}
@@ -88,7 +87,7 @@ export default function Layout({ user, onLogout, menuItems, activeSection, setAc
               className="w-8 h-8 rounded-full flex items-center justify-center text-navy font-bold text-sm"
               style={{ background: 'linear-gradient(135deg,#c9a84c,#dfc278)' }}
             >
-              {user.label.charAt(0).toUpperCase()}
+              {user?.nom?.charAt(0)?.toUpperCase()}
             </div>
           </div>
         </header>
