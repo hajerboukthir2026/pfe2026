@@ -1,10 +1,11 @@
-const { Sequelize } = require("sequelize");
+const mongoose = require("mongoose");
 
-// connexion à MySQL (XAMPP)
-const sequelize = new Sequelize("seniorcare", "root", "", {
-  host: "localhost",
-  dialect: "mysql",
-  logging: false, // optionnel
-});
+const connectDB = async () => {
+  const uri =
+    process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/seniorcare";
 
-module.exports = sequelize;
+  await mongoose.connect(uri);
+  console.log("Connexion MongoDB réussie");
+};
+
+module.exports = connectDB;

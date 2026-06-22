@@ -32,7 +32,9 @@ const STATS = [
   { val: '24/7', label: 'Disponibilité' },
 ];
 
-export default function Home({ user }) {
+import { ROLE_LABELS, HOME_LINK_BY_ROLE } from '../data/initialData';
+
+export default function Home({ user, setUser }) {
   const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
   const [visible, setVisible] = useState(false);
@@ -107,7 +109,9 @@ export default function Home({ user }) {
                   <p style={{ color: '#fff', fontSize: 13, fontWeight: 600, margin: 0, lineHeight: 1.2 }}>
                     {user.prenom} {user.nom}
                   </p>
-                  <p style={{ color: '#c9a84c', fontSize: 11, margin: 0, lineHeight: 1.2 }}>{user.role}</p>
+                  <p style={{ color: '#c9a84c', fontSize: 11, margin: 0, lineHeight: 1.2 }}>
+                    {ROLE_LABELS[user.role] || user.role}
+                  </p>
                 </div>
                 <svg
                   width="14" height="14" viewBox="0 0 24 24" fill="none"
@@ -134,32 +138,13 @@ export default function Home({ user }) {
                     <p style={{ color: '#64748b', fontSize: 11, margin: '4px 0 0' }}>{user.email}</p>
                   </div>
 
-                  {/* Menu items */}
-                  {[
-                    {
-                      label: 'Tableau de bord',
-                      icon: (
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="2">
-                          <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
-                          <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
-                        </svg>
-                      ),
-                      action: () => navigate('/dashboard'),
-                    },
-                    {
-                      label: 'Paramètres',
-                      icon: (
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="2">
-                          <circle cx="12" cy="8" r="4"/>
-                          <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-                        </svg>
-                      ),
-                      action: () => navigate('/parametres'),
-                    },
-                  ].map(item => (
+                  {/* Lien vers l'espace du rôle connecté */}
+                  {HOME_LINK_BY_ROLE[user.role] && (
                     <div
-                      key={item.label}
-                      onClick={() => { item.action(); setMenuOpen(false); }}
+                      onClick={() => {
+                        navigate(HOME_LINK_BY_ROLE[user.role].path);
+                        setMenuOpen(false);
+                      }}
                       style={{
                         display: 'flex', alignItems: 'center', gap: 10,
                         padding: '11px 16px', cursor: 'pointer',
@@ -168,19 +153,22 @@ export default function Home({ user }) {
                       onMouseEnter={e => e.currentTarget.style.background = 'rgba(201,168,76,0.07)'}
                       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                     >
-                      {item.icon}
-                      {item.label}
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="2">
+                        <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+                        <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+                      </svg>
+                      {HOME_LINK_BY_ROLE[user.role].label}
                     </div>
-                  ))}
+                  )}
 
                   {/* Déconnecter */}
                   <div style={{ borderTop: '1px solid rgba(201,168,76,0.1)' }}>
                     <div
                       onClick={() => {
                         localStorage.removeItem('token');
+                        setUser?.(null);
                         setMenuOpen(false);
                         navigate('/login');
-                        window.location.reload(); 
                       }}
                       style={{
                         display: 'flex', alignItems: 'center', gap: 10,

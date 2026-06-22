@@ -5,6 +5,7 @@ import {
   Route,
   Navigate,
   Outlet,
+  useNavigate,
 } from "react-router-dom";
 
 import Layout from "./components/Layout";
@@ -41,8 +42,10 @@ import {
   INIT_COMPTES,
   INIT_PLANNING_PP,
   INIT_PLANNING_STAGE,
+  DEFAULT_ROUTE_BY_ROLE,
+  appRoleFromPayload,
 } from "./data/initialData";
-import axios from "axios";
+import { fetchProfile as getProfile } from "./config/api";
 
 // ── Menu definitions ──────────────────────
 const MENUS = {
@@ -71,44 +74,54 @@ const MENUS = {
   ],
 };
 
-const DEFAULT_ROUTE = {
-  administrateur: "/dashboard",
-  personnelPermanent: "/dossier",
-  stagiaire: "/dossier",
-  famille: "/demandervisite",
-};
+function postLoginPathFromToken(token) {
+  try {
+    const part = token.split(".")[1];
+    if (!part) return "/";
+    const b64 = part.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = b64 + "=".repeat((4 - (b64.length % 4)) % 4);
+    const payload = JSON.parse(atob(padded));
+    const key = appRoleFromPayload(payload.role);
+    return DEFAULT_ROUTE_BY_ROLE[key] || "/";
+  } catch {
+    return "/";
+  }
+}
 
 // ── Protected Route ──────────────────────
+/** /login : accessible seulement sans token ; avec token → interface du rôle */
 function ProtectedAuth() {
-  const [auth,setAuth] = useState(false);
-   useEffect(() => {
-    const data = localStorage.getItem("token");
-    if (data) {
-      try {
-        setAuth(true);
-      } catch {
-        localStorage.removeItem("token");
-      }
-    }
-  }, []);
-  return auth ? <Navigate to={"/"} replace={true} /> : <Outlet />
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  if (token) {
+    return <Navigate to={postLoginPathFromToken(token)} replace />;
+  }
+  return <Outlet />;
 }
-function ProtectedRoute({ user }) {
+function ProtectedRoute({ user, authReady }) {
+  if (!authReady) {
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center text-sm"
+        style={{ background: "#0a1528", color: "#94a3b8" }}
+      >
+        Chargement…
+      </div>
+    );
+  }
   if (!user) return <Navigate to="/login" replace />;
   return <Outlet />;
 }
 
 function RoleRoute({ user, allowedRoles }) {
-  console.log("first")
-  console.log(user)
   if (!allowedRoles.includes(user?.role)) {
-    return <Navigate to="/" replace />;
+    return <Navigate to={DEFAULT_ROUTE_BY_ROLE[user?.role] || "/"} replace />;
   }
   return <Outlet />;
 }
 
 // ── Main Routes ─────────────────────────
-function AppRoutes({ user, setUser, sharedState }) {
+function AppRoutes({ user, setUser, sharedState, authReady }) {
+  const navigate = useNavigate();
   const {
     residents, setResidents,
     personnel, setPersonnel,
@@ -129,21 +142,22 @@ function AppRoutes({ user, setUser, sharedState }) {
   return (
     <Routes>
   {/* Public routes */}
-  <Route path="/" element={<Home user={user} />} />
+  <Route path="/" element={<Home user={user} setUser={setUser} />} />
   <Route element={<ProtectedAuth />}>
-    <Route path="/login" element={<AuthPage />} />
+    <Route path="/login" element={<AuthPage setUser={setUser} />} />
   </Route>
 
   {/* Protected */}
-  <Route element={<ProtectedRoute user={user} />}>
+  <Route element={<ProtectedRoute user={user} authReady={authReady} />}>
     <Route
       path="/"
       element={
         <Layout
           user={user}
           onLogout={() => {
-            localStorage.removeItem("auth");
+            localStorage.removeItem("token");
             setUser(null);
+            navigate("/login", { replace: true });
           }}
           menuItems={MENUS[user?.role] || []}
         />
@@ -182,7 +196,10 @@ function AppRoutes({ user, setUser, sharedState }) {
       </Route>
 
       {/* fallback */}
-      <Route path="*" element={<Navigate to={DEFAULT_ROUTE[user?.role]} replace />} />
+      <Route
+        path="*"
+        element={<Navigate to={DEFAULT_ROUTE_BY_ROLE[user?.role] || "/"} replace />}
+      />
     </Route>
   </Route>
 
@@ -195,6 +212,7 @@ function AppRoutes({ user, setUser, sharedState }) {
 // ── App Root ────────────────────────────
 export default function App() {
   const [user, setUser] = useState(null);
+  const [authReady, setAuthReady] = useState(false);
 
   const [residents, setResidents] = useState(INIT_RESIDENTS);
   const [personnel, setPersonnel] = useState(INIT_PERSONNEL);
@@ -202,38 +220,32 @@ export default function App() {
   const [messages, setMessages] = useState(INIT_MESSAGES);
   const [comptes, setComptes] = useState(INIT_COMPTES);
 
- useEffect(() => {
-    const fetchProfile = async () => {
-      const data = localStorage.getItem("token");
-
-      if (data) {
-        try {
-          
-         
-
-          const res = await axios.get(
-            "http://localhost:5000/api/v1/auth/profile",
-            {
-              headers: {
-                Authorization: `Bearer ${data}`,
-              },
-            }
-          );
-          setUser(res.data);
-
-        } catch (error) {
-          console.log("ERROR:", error.response?.data || error.message);
-        }
+  useEffect(() => {
+    const loadProfile = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setAuthReady(true);
+        return;
+      }
+      try {
+        const profile = await getProfile();
+        setUser(profile);
+      } catch {
+        localStorage.removeItem("token");
+        setUser(null);
+      } finally {
+        setAuthReady(true);
       }
     };
 
-    fetchProfile();
+    loadProfile();
   }, []);
 
   return (
     <AppRoutes
       user={user}
       setUser={setUser}
+      authReady={authReady}
       sharedState={{
         residents, setResidents,
         personnel, setPersonnel,

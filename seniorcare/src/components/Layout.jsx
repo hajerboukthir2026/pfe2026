@@ -1,8 +1,9 @@
 // src/components/Layout.jsx
 import React, { useState } from 'react';
+import { NavLink, Outlet } from 'react-router-dom';
 import { ROLE_LABELS } from '../data/initialData';
 
-export default function Layout({ user, onLogout, menuItems, activeSection, setActiveSection, children }) {
+export default function Layout({ user, onLogout, menuItems = [] }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   return (
@@ -33,22 +34,26 @@ export default function Layout({ user, onLogout, menuItems, activeSection, setAc
             className="px-4 py-3 border-b shrink-0"
             style={{ borderColor: 'rgba(201,168,76,0.12)' }}
           >
-            <p className="text-xs text-slate-500">{ROLE_LABELS[user.role]}</p>
-            <p className="text-sm text-white font-medium truncate">{user.label}</p>
+            <p className="text-xs text-slate-500">{ROLE_LABELS[user.role] || user.role}</p>
+            <p className="text-sm text-white font-medium truncate">
+              {user.label || `${user.prenom} ${user.nom}`.trim()}
+            </p>
           </div>
         )}
 
         {/* Nav */}
         <nav className="flex-1 py-4 space-y-1 px-2 overflow-y-auto">
           {menuItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setActiveSection(item.id)}
-              className={`sidebar-item ${activeSection === item.id ? 'active' : ''}`}
+            <NavLink
+              key={item.path}
+              to={item.path}
+              className={({ isActive }) =>
+                `sidebar-item flex items-center gap-2 w-full text-left ${isActive ? 'active' : ''}`
+              }
             >
-              <span className="text-base shrink-0">{item.icon}</span>
+              <span className="text-base shrink-0">{item.icon || '›'}</span>
               {sidebarOpen && <span className="truncate">{item.label}</span>}
-            </button>
+            </NavLink>
           ))}
         </nav>
 
@@ -93,7 +98,9 @@ export default function Layout({ user, onLogout, menuItems, activeSection, setAc
         </header>
 
         {/* Content */}
-        <main className="flex-1 p-6">{children}</main>
+        <main className="flex-1 p-6">
+          <Outlet />
+        </main>
       </div>
     </div>
   );

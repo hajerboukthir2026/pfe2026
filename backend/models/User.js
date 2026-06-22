@@ -1,49 +1,34 @@
-const { DataTypes } = require("sequelize");
-const sequelize = require("../config/db");
+const mongoose = require("mongoose");
 
-const User = sequelize.define(
-  "User",
+const ROLES = [
+  "Administrateur",
+  "PersonnelPermanent",
+  "Stagiaire",
+  "Famille",
+];
+
+const userSchema = new mongoose.Schema(
   {
-    nom: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
-    prenom: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
+    nom: { type: String, required: true, trim: true },
+    prenom: { type: String, required: true, trim: true },
     email: {
-      type: DataTypes.STRING,
-      allowNull: false,
+      type: String,
+      required: true,
       unique: true,
-      validate: {
-        isEmail: true,
-      },
+      lowercase: true,
+      trim: true,
     },
-    motDePasse: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
-    role: {
-      type: DataTypes.ENUM(
-        "Administrateur",
-        "PersonnelPermanent",
-        "Stagiaire",
-        "Famille"
-      ),
-      allowNull: false,
-    },
-    telephone: {
-      type: DataTypes.STRING,
-    },
-    actif: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: true,
+    motDePasse: { type: String, required: true },
+    role: { type: String, required: true, enum: ROLES },
+    telephone: { type: String, trim: true },
+    actif: { type: Boolean, default: true },
+    residentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Resident",
+      default: null,
     },
   },
-  {
-    timestamps: true, // createdAt / updatedAt
-  }
+  { timestamps: true }
 );
 
-module.exports = User;
+module.exports = mongoose.model("User", userSchema);

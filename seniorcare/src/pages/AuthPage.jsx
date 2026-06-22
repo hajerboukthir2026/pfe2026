@@ -1,20 +1,10 @@
 // src/pages/AuthPage.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { DEFAULT_ROUTE_BY_ROLE } from '../data/initialData';
+import { login, register, fetchProfile as getProfile } from '../config/api';
 
-const api = axios.create({
-  baseURL: 'http://localhost:5000/api/v1/auth',
-  headers: { 'Content-Type': 'application/json' },
-});
-
-const DEFAULT_ROUTE = {
-  admin: '/dashboard',
-  personnel: '/dossier',
-  famille: '/demandervisite',
-};
-
-export default function AuthPage({ onLogin }) {
+export default function AuthPage({ setUser }) {
   const [tab, setTab] = useState('login');
   const [form, setForm] = useState({
     nom: '', prenom: '', email: '', password: '', role: 'Famille', telephone: '',
@@ -28,14 +18,12 @@ export default function AuthPage({ onLogin }) {
     setError('');
     setLoading(true);
     try {
-      const { data } = await api.post('/login', {
-        email: form.email,
-        motDePasse: form.password,
-      });
+      const data = await login(form.email, form.password);
       localStorage.setItem('token', data.token);
-
-      navigate('/', { replace: true });
-      window.location.reload();
+      const profile = await getProfile();
+      setUser(profile);
+      const path = DEFAULT_ROUTE_BY_ROLE[data.role] || '/demandervisite';
+      navigate(path, { replace: true });
     } catch (err) {
       setError(err.response?.data?.message || 'Email ou mot de passe incorrect.');
     } finally {
@@ -48,7 +36,7 @@ export default function AuthPage({ onLogin }) {
     setError('');
     setLoading(true);
     try {
-      await api.post('/register', {
+      await register({
         nom: form.nom,
         prenom: form.prenom,
         email: form.email,
@@ -186,17 +174,6 @@ export default function AuthPage({ onLogin }) {
                 />
               </div>
               <div>
-                <label className="sc-label">Rôle</label>
-                <select
-                  className="sc-input"
-                  value={form.role}
-                  onChange={(e) => setForm({ ...form, role: e.target.value })}
-                >
-                  <option value="Famille">Famille</option>
-                  <option value="Personnel">Personnel</option>
-                </select>
-              </div>
-              <div>
                 <label className="sc-label">Mot de passe</label>
                 <input
                   type="password"
@@ -206,6 +183,9 @@ export default function AuthPage({ onLogin }) {
                   onChange={(e) => setForm({ ...form, password: e.target.value })}
                 />
               </div>
+              <p className="text-xs text-slate-500">
+                Inscription réservée aux familles. Votre compte sera activé par l'administrateur.
+              </p>
               <button
                 className="btn-gold w-full py-2.5"
                 onClick={handleRegister}
