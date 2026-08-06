@@ -7,15 +7,23 @@ export function PlanningPersonnel({ planning }) {
     <div>
       <SectionHeader title="Planning personnel" subtitle="Plannings des personnels permanents" />
       <Table headers={['Personnel', 'Jour', 'Début', 'Fin', 'Service']}>
-        {planning.map((p) => (
-          <tr key={p.id} className="table-row">
-            <td className="p-4 text-white font-medium">{p.personnel}</td>
-            <td className="p-4 text-slate-300">{p.jour}</td>
-            <td className="p-4 text-slate-300">{p.debut}</td>
-            <td className="p-4 text-slate-300">{p.fin}</td>
-            <td className="p-4"><Badge label={p.service} /></td>
+        {(!planning || planning.length === 0) ? (
+          <tr>
+            <td colSpan={5} className="p-6 text-center text-slate-500 text-sm">
+              Aucun planning disponible.
+            </td>
           </tr>
-        ))}
+        ) : (
+          planning.map((p) => (
+            <tr key={p.id} className="table-row">
+              <td className="p-4 text-white font-medium">{p.personnel}</td>
+              <td className="p-4 text-slate-300">{p.jour}</td>
+              <td className="p-4 text-slate-300">{p.debut}</td>
+              <td className="p-4 text-slate-300">{p.fin}</td>
+              <td className="p-4"><Badge label={p.service} /></td>
+            </tr>
+          ))
+        )}
       </Table>
     </div>
   );
@@ -25,27 +33,31 @@ export function PlanningStage({ planning }) {
   return (
     <div>
       <SectionHeader title="Planning de stage" subtitle="Détails de votre stage" />
-      {planning.map((p) => (
-        <div key={p.id} className="sc-card p-6 mb-4">
-          <div className="grid grid-cols-2 gap-5">
-            {[
-              ['Stagiaire',   p.stagiaire],
-              ['Service',     p.service],
-              ['Date début',  p.debut],
-              ['Date fin',    p.fin],
-            ].map(([label, val]) => (
-              <div key={label}>
-                <p className="text-xs text-slate-500 mb-0.5">{label}</p>
-                <p className="text-white font-medium text-sm">{val}</p>
+      {(!planning || planning.length === 0) ? (
+        <p className="text-slate-500 text-sm">Aucun planning de stage disponible.</p>
+      ) : (
+        planning.map((p) => (
+          <div key={p.id} className="sc-card p-6 mb-4">
+            <div className="grid grid-cols-2 gap-5">
+              {[
+                ['Stagiaire', p.stagiaire],
+                ['Service', p.service],
+                ['Date début', p.debut],
+                ['Date fin', p.fin],
+              ].map(([label, val]) => (
+                <div key={label}>
+                  <p className="text-xs text-slate-500 mb-0.5">{label}</p>
+                  <p className="text-white font-medium text-sm">{val}</p>
+                </div>
+              ))}
+              <div className="col-span-2">
+                <p className="text-xs text-slate-500 mb-0.5">Superviseur</p>
+                <p className="text-white font-medium text-sm">{p.superviseur}</p>
               </div>
-            ))}
-            <div className="col-span-2">
-              <p className="text-xs text-slate-500 mb-0.5">Superviseur</p>
-              <p className="text-white font-medium text-sm">{p.superviseur}</p>
             </div>
           </div>
-        </div>
-      ))}
+        ))
+      )}
     </div>
   );
 }

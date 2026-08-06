@@ -21,6 +21,7 @@ const userSchema = new mongoose.Schema(
     motDePasse: { type: String, required: true },
     role: { type: String, required: true, enum: ROLES },
     telephone: { type: String, trim: true },
+    specialite: { type: String, trim: true, default: "" },
     actif: { type: Boolean, default: true },
     residentId: {
       type: mongoose.Schema.Types.ObjectId,

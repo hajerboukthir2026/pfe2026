@@ -12,19 +12,17 @@ import Layout from "./components/Layout";
 import AuthPage from "./pages/AuthPage";
 import Home from "./pages/Home";
 
-// Admin pages
 import Dashboard from "./pages/admin/Dashboard";
 import GererResidents from "./pages/admin/GererResidents";
 import GererPersonnel from "./pages/admin/GererPersonnel";
 import GererVisites from "./pages/admin/GererVisites";
+import GererPlannings from "./pages/admin/GererPlannings";
 import Messages from "./pages/admin/Messages";
 import Comptes from "./pages/admin/Comptes";
 
-// Personnel pages
 import DossierResident from "./pages/personnel/DossierResident";
 import { PlanningPersonnel, PlanningStage } from "./pages/personnel/PlanningPersonnel";
 
-// Famille pages
 import {
   DemanderVisite,
   PlanningVisitesFamille,
@@ -33,27 +31,26 @@ import {
   FicheResident,
 } from "./pages/famille/FamillePages";
 
-// Data
 import {
-  INIT_RESIDENTS,
-  INIT_PERSONNEL,
-  INIT_VISITES,
-  INIT_MESSAGES,
-  INIT_COMPTES,
-  INIT_PLANNING_PP,
-  INIT_PLANNING_STAGE,
   DEFAULT_ROUTE_BY_ROLE,
   appRoleFromPayload,
 } from "./data/initialData";
-import { fetchProfile as getProfile } from "./config/api";
+import {
+  fetchProfile as getProfile,
+  fetchResidents,
+  fetchPersonnel,
+  fetchVisites,
+  fetchMessages,
+  fetchPlannings,
+} from "./config/api";
 
-// ── Menu definitions ──────────────────────
 const MENUS = {
   administrateur: [
     { path: "/dashboard", label: "Tableau de bord" },
     { path: "/residents", label: "Résidents" },
     { path: "/personnel", label: "Personnel" },
     { path: "/visites", label: "Visites" },
+    { path: "/plannings", label: "Plannings" },
     { path: "/messages", label: "Messages famille" },
     { path: "/comptes", label: "Comptes utilisateurs" },
   ],
@@ -88,8 +85,6 @@ function postLoginPathFromToken(token) {
   }
 }
 
-// ── Protected Route ──────────────────────
-/** /login : accessible seulement sans token ; avec token → interface du rôle */
 function ProtectedAuth() {
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   if (token) {
@@ -97,6 +92,7 @@ function ProtectedAuth() {
   }
   return <Outlet />;
 }
+
 function ProtectedRoute({ user, authReady }) {
   if (!authReady) {
     return (
@@ -119,7 +115,6 @@ function RoleRoute({ user, allowedRoles }) {
   return <Outlet />;
 }
 
-// ── Main Routes ─────────────────────────
 function AppRoutes({ user, setUser, sharedState, authReady }) {
   const navigate = useNavigate();
   const {
@@ -127,7 +122,7 @@ function AppRoutes({ user, setUser, sharedState, authReady }) {
     personnel, setPersonnel,
     visites, setVisites,
     messages, setMessages,
-    comptes, setComptes,
+    plannings, setPlannings,
   } = sharedState;
 
   const props = {
@@ -135,90 +130,86 @@ function AppRoutes({ user, setUser, sharedState, authReady }) {
     personnel, setPersonnel,
     visites, setVisites,
     messages, setMessages,
-    comptes, setComptes,
+    plannings, setPlannings,
     user,
   };
 
+  const planningPP = plannings.filter((p) => p.type === "personnel");
+  const planningStage = plannings.filter((p) => p.type === "stage");
+
   return (
     <Routes>
-  {/* Public routes */}
-  <Route path="/" element={<Home user={user} setUser={setUser} />} />
-  <Route element={<ProtectedAuth />}>
-    <Route path="/login" element={<AuthPage setUser={setUser} />} />
-  </Route>
-
-  {/* Protected */}
-  <Route element={<ProtectedRoute user={user} authReady={authReady} />}>
-    <Route
-      path="/"
-      element={
-        <Layout
-          user={user}
-          onLogout={() => {
-            localStorage.removeItem("token");
-            setUser(null);
-            navigate("/login", { replace: true });
-          }}
-          menuItems={MENUS[user?.role] || []}
-        />
-      }
-    >
-      {/* Admin */}
-      <Route element={<RoleRoute user={user} allowedRoles={["administrateur"]} />}>
-        <Route path="dashboard" element={<Dashboard {...props} />} />
-        <Route path="residents" element={<GererResidents {...props} />} />
-        <Route path="personnel" element={<GererPersonnel {...props} />} />
-        <Route path="visites" element={<GererVisites {...props} />} />
-        <Route path="messages" element={<Messages {...props} />} />
-        <Route path="comptes" element={<Comptes {...props} />} />
+      <Route path="/" element={<Home user={user} setUser={setUser} />} />
+      <Route element={<ProtectedAuth />}>
+        <Route path="/login" element={<AuthPage setUser={setUser} />} />
       </Route>
 
-      {/* Personnel */}
-      <Route element={<RoleRoute user={user} allowedRoles={["personnelPermanent", "stagiaire"]} />}>
-        <Route path="dossier" element={<DossierResident {...props} />} />
+      <Route element={<ProtectedRoute user={user} authReady={authReady} />}>
+        <Route
+          path="/"
+          element={
+            <Layout
+              user={user}
+              onLogout={() => {
+                localStorage.removeItem("token");
+                setUser(null);
+                navigate("/login", { replace: true });
+              }}
+              menuItems={MENUS[user?.role] || []}
+            />
+          }
+        >
+          <Route element={<RoleRoute user={user} allowedRoles={["administrateur"]} />}>
+            <Route path="dashboard" element={<Dashboard {...props} />} />
+            <Route path="residents" element={<GererResidents {...props} />} />
+            <Route path="personnel" element={<GererPersonnel {...props} />} />
+            <Route path="visites" element={<GererVisites {...props} />} />
+            <Route path="plannings" element={<GererPlannings {...props} />} />
+            <Route path="messages" element={<Messages {...props} />} />
+            <Route path="comptes" element={<Comptes />} />
+          </Route>
+
+          <Route element={<RoleRoute user={user} allowedRoles={["personnelPermanent", "stagiaire"]} />}>
+            <Route path="dossier" element={<DossierResident {...props} />} />
+          </Route>
+
+          <Route element={<RoleRoute user={user} allowedRoles={["personnelPermanent"]} />}>
+            <Route path="planning" element={<PlanningPersonnel planning={planningPP} />} />
+          </Route>
+
+          <Route element={<RoleRoute user={user} allowedRoles={["stagiaire"]} />}>
+            <Route path="stageplanning" element={<PlanningStage planning={planningStage} />} />
+          </Route>
+
+          <Route element={<RoleRoute user={user} allowedRoles={["famille"]} />}>
+            <Route path="demandervisite" element={<DemanderVisite {...props} />} />
+            <Route path="planningvisites" element={<PlanningVisitesFamille visites={visites} user={user} />} />
+            <Route path="envoyermessage" element={<EnvoyerMessage setMessages={setMessages} user={user} />} />
+            <Route path="notes" element={<ConsulterNotes residents={residents} />} />
+            <Route path="ficheresident" element={<FicheResident residents={residents} />} />
+          </Route>
+
+          <Route
+            path="*"
+            element={<Navigate to={DEFAULT_ROUTE_BY_ROLE[user?.role] || "/"} replace />}
+          />
+        </Route>
       </Route>
 
-      <Route element={<RoleRoute user={user} allowedRoles={["personnelPermanent"]} />}>
-        <Route path="planning" element={<PlanningPersonnel planning={INIT_PLANNING_PP} />} />
-      </Route>
-
-      <Route element={<RoleRoute user={user} allowedRoles={["stagiaire"]} />}>
-        <Route path="stageplanning" element={<PlanningStage planning={INIT_PLANNING_STAGE} />} />
-      </Route>
-
-      {/* Famille */}
-      <Route element={<RoleRoute user={user} allowedRoles={["famille"]} />}>
-        <Route path="demandervisite" element={<DemanderVisite {...props} />} />
-        <Route path="planningvisites" element={<PlanningVisitesFamille visites={visites} user={user} />} />
-        <Route path="envoyermessage" element={<EnvoyerMessage setMessages={setMessages} user={user} />} />
-        <Route path="notes" element={<ConsulterNotes residents={residents} />} />
-        <Route path="ficheresident" element={<FicheResident residents={residents} />} />
-      </Route>
-
-      {/* fallback */}
-      <Route
-        path="*"
-        element={<Navigate to={DEFAULT_ROUTE_BY_ROLE[user?.role] || "/"} replace />}
-      />
-    </Route>
-  </Route>
-
-  {/* fallback global */}
-  <Route path="*" element={<Navigate to="/" replace />} />
-</Routes>
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }
 
-// ── App Root ────────────────────────────
 export default function App() {
   const [user, setUser] = useState(null);
   const [authReady, setAuthReady] = useState(false);
 
-  const [residents, setResidents] = useState(INIT_RESIDENTS);
-  const [personnel, setPersonnel] = useState(INIT_PERSONNEL);
-  const [visites, setVisites] = useState(INIT_VISITES);
-  const [messages, setMessages] = useState(INIT_MESSAGES);
-  const [comptes, setComptes] = useState(INIT_COMPTES);
+  const [residents, setResidents] = useState([]);
+  const [personnel, setPersonnel] = useState([]);
+  const [visites, setVisites] = useState([]);
+  const [messages, setMessages] = useState([]);
+  const [plannings, setPlannings] = useState([]);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -241,6 +232,58 @@ export default function App() {
     loadProfile();
   }, []);
 
+  useEffect(() => {
+    if (!authReady || !user) {
+      setResidents([]);
+      setPersonnel([]);
+      setVisites([]);
+      setMessages([]);
+      setPlannings([]);
+      return;
+    }
+
+    const loadAll = async () => {
+      try {
+        const role = user.role;
+        const residentsData = await fetchResidents().catch(() => []);
+        setResidents(residentsData);
+
+        if (role === "administrateur") {
+          const [p, v, m, pl] = await Promise.all([
+            fetchPersonnel().catch(() => []),
+            fetchVisites().catch(() => []),
+            fetchMessages().catch(() => []),
+            fetchPlannings().catch(() => []),
+          ]);
+          setPersonnel(p);
+          setVisites(v);
+          setMessages(m);
+          setPlannings(pl);
+        } else if (role === "personnelPermanent" || role === "stagiaire") {
+          const pl = await fetchPlannings().catch(() => []);
+          setPersonnel([]);
+          setVisites([]);
+          setMessages([]);
+          setPlannings(pl);
+        } else if (role === "famille") {
+          const v = await fetchVisites().catch(() => []);
+          setPersonnel([]);
+          setVisites(v);
+          setMessages([]);
+          setPlannings([]);
+        }
+      } catch {
+        setResidents([]);
+        setPersonnel([]);
+        setVisites([]);
+        setMessages([]);
+        setPlannings([]);
+      }
+    };
+
+    loadAll();
+  }, [authReady, user]);
+
   return (
     <AppRoutes
       user={user}
@@ -251,7 +294,7 @@ export default function App() {
         personnel, setPersonnel,
         visites, setVisites,
         messages, setMessages,
-        comptes, setComptes,
+        plannings, setPlannings,
       }}
     />
   );
