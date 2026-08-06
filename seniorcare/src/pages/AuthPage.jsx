@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DEFAULT_ROUTE_BY_ROLE } from '../data/initialData';
-import { login, register, fetchProfile as getProfile } from '../config/api';
+import { login, register, fetchProfile as getProfile, getApiErrorMessage } from '../config/api';
 
 export default function AuthPage({ setUser }) {
   const [tab, setTab] = useState('login');
@@ -25,7 +25,7 @@ export default function AuthPage({ setUser }) {
       const path = DEFAULT_ROUTE_BY_ROLE[data.role] || '/demandervisite';
       navigate(path, { replace: true });
     } catch (err) {
-      setError(err.response?.data?.message || 'Email ou mot de passe incorrect.');
+      setError(getApiErrorMessage(err, 'Email ou mot de passe incorrect.'));
     } finally {
       setLoading(false);
     }
@@ -48,7 +48,7 @@ export default function AuthPage({ setUser }) {
       setForm({ nom: '', prenom: '', email: '', password: '', role: 'Famille', telephone: '' });
       alert("Inscription envoyée. En attente d'activation par l'administrateur.");
     } catch (err) {
-      setError(err.response?.data?.message || "Erreur lors de l'inscription.");
+      setError(getApiErrorMessage(err, "Erreur lors de l'inscription."));
     } finally {
       setLoading(false);
     }

@@ -30,7 +30,11 @@ exports.validateLogin = [
 const checkValidation = (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    res.status(422).json({ errors: errors.array() });
+    const liste = errors.array();
+    res.status(422).json({
+      message: liste[0]?.msg || "Données invalides",
+      errors: liste,
+    });
     return false;
   }
   return true;
@@ -112,6 +116,9 @@ exports.profile = async (req, res) => {
     const plain = user.toObject();
     plain.role = toAppRole(plain.role);
     plain.label = `${plain.prenom} ${plain.nom}`.trim();
+    if (plain.residentId) {
+      plain.residentId = plain.residentId.toString();
+    }
 
     res.json(plain);
   } catch (err) {

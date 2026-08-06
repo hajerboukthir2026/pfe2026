@@ -1,49 +1,68 @@
 // src/pages/personnel/DossierResident.jsx
 import React, { useState } from 'react';
-import { SectionHeader, Badge, Modal, FormField } from '../../components/UI';
+import { SectionHeader, Modal, FormField } from '../../components/UI';
+import { addResidentNote, addResidentMesure, getApiErrorMessage } from '../../config/api';
 
 export default function DossierResident({ residents, setResidents }) {
-  const [selectedId, setSelectedId]   = useState(null);
-  const [tab, setTab]                 = useState('notes');
-  const [noteText, setNoteText]       = useState('');
+  const [selectedId, setSelectedId] = useState(null);
+  const [tab, setTab] = useState('notes');
+  const [noteText, setNoteText] = useState('');
   const [mesureModal, setMesureModal] = useState(false);
-  const [mForm, setMForm]             = useState({ date: '', tension: '', poids: '' });
+  const [mForm, setMForm] = useState({ date: '', tension: '', poids: '' });
+  const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const resident = residents.find((r) => r.id === selectedId);
 
-  const addNote = () => {
-    if (!noteText.trim()) return;
-    setResidents((prev) =>
-      prev.map((r) =>
-        r.id === selectedId ? { ...r, notes: r.notes ? r.notes + '\n' + noteText : noteText } : r
-      )
-    );
-    setNoteText('');
+  const addNote = async () => {
+    if (!noteText.trim() || !selectedId) return;
+    setSaving(true);
+    setError('');
+    try {
+      const updated = await addResidentNote(selectedId, noteText.trim());
+      setResidents((prev) => prev.map((r) => (r.id === selectedId ? updated : r)));
+      setNoteText('');
+    } catch (err) {
+      setError(getApiErrorMessage(err, "Erreur lors de l'ajout de la note."));
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const addMesure = () => {
-    setResidents((prev) =>
-      prev.map((r) =>
-        r.id === selectedId ? { ...r, mesures: [...(r.mesures || []), mForm] } : r
-      )
-    );
-    setMesureModal(false);
-    setMForm({ date: '', tension: '', poids: '' });
+  const addMesure = async () => {
+    if (!selectedId) return;
+    setSaving(true);
+    setError('');
+    try {
+      const updated = await addResidentMesure(selectedId, mForm);
+      setResidents((prev) => prev.map((r) => (r.id === selectedId ? updated : r)));
+      setMesureModal(false);
+      setMForm({ date: '', tension: '', poids: '' });
+    } catch (err) {
+      setError(getApiErrorMessage(err, "Erreur lors de l'enregistrement de la mesure."));
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <div>
       <SectionHeader title="Dossier résident" subtitle="Consulter et mettre à jour les dossiers" />
 
+      {error && (
+        <div className="mb-4 p-3 rounded-lg border border-red-500/30 bg-red-500/10 text-red-400 text-sm">
+          {error}
+        </div>
+      )}
+
       <div className="grid md:grid-cols-3 gap-4">
-        {/* Resident list */}
         <div className="sc-card p-4">
           <p className="text-xs font-semibold mb-3" style={{ color: '#c9a84c' }}>Résidents actifs</p>
           <div className="space-y-1">
             {residents.filter((r) => r.statut === 'actif').map((r) => (
               <button
                 key={r.id}
-                onClick={() => { setSelectedId(r.id); setTab('notes'); }}
+                onClick={() => { setSelectedId(r.id); setTab('notes'); setError(''); }}
                 className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all ${
                   selectedId === r.id
                     ? 'border text-yellow-400'
@@ -57,7 +76,6 @@ export default function DossierResident({ residents, setResidents }) {
           </div>
         </div>
 
-        {/* Detail panel */}
         <div className="md:col-span-2 sc-card p-5">
           {!resident ? (
             <p className="text-slate-500 text-sm">Sélectionnez un résident dans la liste.</p>
@@ -76,9 +94,8 @@ export default function DossierResident({ residents, setResidents }) {
                 </div>
               </div>
 
-              {/* Tabs */}
               <div className="flex gap-2 mb-5">
-                {[['notes','Notes'], ['mesures','Mesures médicales']].map(([t, l]) => (
+                {[['notes', 'Notes'], ['mesures', 'Mesures médicales']].map(([t, l]) => (
                   <button
                     key={t}
                     onClick={() => setTab(t)}
@@ -91,7 +108,6 @@ export default function DossierResident({ residents, setResidents }) {
                 ))}
               </div>
 
-              {/* Notes tab */}
               {tab === 'notes' && (
                 <div>
                   <div
@@ -108,12 +124,13 @@ export default function DossierResident({ residents, setResidents }) {
                       onChange={(e) => setNoteText(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && addNote()}
                     />
-                    <button className="btn-gold" onClick={addNote}>Ajouter</button>
+                    <button className="btn-gold" onClick={addNote} disabled={saving}>
+                      Ajouter
+                    </button>
                   </div>
                 </div>
               )}
 
-              {/* Mesures tab */}
               {tab === 'mesures' && (
                 <div>
                   <div className="flex justify-end mb-3">
@@ -154,17 +171,36 @@ export default function DossierResident({ residents, setResidents }) {
         <Modal title="Enregistrer mesure médicale" onClose={() => setMesureModal(false)}>
           <div className="space-y-3">
             <FormField label="Date">
-              <input type="date" className="sc-input" value={mForm.date} onChange={(e) => setMForm({ ...mForm, date: e.target.value })} />
+              <input
+                type="date"
+                className="sc-input"
+                value={mForm.date}
+                onChange={(e) => setMForm({ ...mForm, date: e.target.value })}
+              />
             </FormField>
             <FormField label="Tension artérielle">
-              <input className="sc-input" placeholder="ex: 12/8" value={mForm.tension} onChange={(e) => setMForm({ ...mForm, tension: e.target.value })} />
+              <input
+                className="sc-input"
+                placeholder="ex: 12/8"
+                value={mForm.tension}
+                onChange={(e) => setMForm({ ...mForm, tension: e.target.value })}
+              />
             </FormField>
             <FormField label="Poids">
-              <input className="sc-input" placeholder="ex: 72 kg" value={mForm.poids} onChange={(e) => setMForm({ ...mForm, poids: e.target.value })} />
+              <input
+                className="sc-input"
+                placeholder="ex: 72 kg"
+                value={mForm.poids}
+                onChange={(e) => setMForm({ ...mForm, poids: e.target.value })}
+              />
             </FormField>
             <div className="flex gap-3 pt-2">
-              <button className="btn-gold flex-1" onClick={addMesure}>Enregistrer</button>
-              <button className="btn-outline flex-1" onClick={() => setMesureModal(false)}>Annuler</button>
+              <button className="btn-gold flex-1" onClick={addMesure} disabled={saving}>
+                {saving ? 'Enregistrement…' : 'Enregistrer'}
+              </button>
+              <button className="btn-outline flex-1" onClick={() => setMesureModal(false)}>
+                Annuler
+              </button>
             </div>
           </div>
         </Modal>

@@ -1,14 +1,31 @@
 // src/pages/admin/Messages.jsx
-import React from 'react';
+import React, { useState } from 'react';
 import { SectionHeader, Badge } from '../../components/UI';
+import { markMessageRead, getApiErrorMessage } from '../../config/api';
 
 export default function Messages({ messages, setMessages }) {
-  const markRead = (id) =>
-    setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, lu: true } : m)));
+  const [error, setError] = useState('');
+
+  const markRead = async (id) => {
+    setError('');
+    try {
+      const updated = await markMessageRead(id);
+      setMessages((prev) => prev.map((m) => (m.id === id ? updated : m)));
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Erreur lors de la mise à jour.'));
+    }
+  };
 
   return (
     <div>
       <SectionHeader title="Messages famille" subtitle="Messages reçus des familles des résidents" />
+
+      {error && (
+        <div className="mb-4 p-3 rounded-lg border border-red-500/30 bg-red-500/10 text-red-400 text-sm">
+          {error}
+        </div>
+      )}
+
       {messages.length === 0 ? (
         <p className="text-slate-500 text-sm">Aucun message reçu.</p>
       ) : (
